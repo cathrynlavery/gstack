@@ -2,7 +2,7 @@
 name: document-release
 preamble-tier: 2
 version: 1.0.0
-description: Post-ship documentation update. (gstack)
+description: "Post-ship documentation update. Use when: update docs after ship; document what changed; post-ship docs. (gstack)"
 allowed-tools:
   - Bash
   - Read

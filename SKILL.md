@@ -3,7 +3,7 @@ disable-model-invocation: true
 name: gstack
 preamble-tier: 1
 version: 1.2.0
-description: Router for the gstack skill suite. (gstack)
+description: "Router for the gstack skill suite. Use when: gstack; which gstack skill; route this with gstack. (gstack)"
 allowed-tools:
   - Bash
   - Read

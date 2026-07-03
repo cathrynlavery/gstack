@@ -1,7 +1,7 @@
 ---
 name: open-gstack-browser
 version: 0.2.0
-description: Launch GStack Browser — AI-controlled Chromium with the sidebar extension baked in.
+description: "Launch GStack Browser — AI-controlled Chromium with the sidebar extension baked in. Use when: open gstack browser; launch chromium; show me the browser."
 triggers:
   - open gstack browser
   - launch chromium

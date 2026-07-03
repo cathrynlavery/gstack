@@ -1,7 +1,7 @@
 ---
 name: freeze
 version: 0.1.0
-description: Restrict file edits to a specific directory for the session. (gstack)
+description: "Restrict file edits to a specific directory for the session. Use when: freeze edits to directory; lock editing scope; restrict file changes. (gstack)"
 triggers:
   - freeze edits to directory
   - lock editing scope

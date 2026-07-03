@@ -1,7 +1,7 @@
 ---
 name: scrape
 version: 1.0.0
-description: Pull data from a web page. (gstack)
+description: "Pull data from a web page. Use when: scrape this page; get data from; pull from; extract from; what is on. (gstack)"
 allowed-tools:
   - Bash
   - Read
