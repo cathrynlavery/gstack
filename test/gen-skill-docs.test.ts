@@ -1344,6 +1344,19 @@ describe('Codex filesystem boundary', () => {
     expect(content).toContain('Consider retrying');
   });
 
+  test('codex skill auto-refreshes the CLI from npm latest', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'codex', 'SKILL.md'), 'utf-8');
+    expect(content).toContain('npm install -g @openai/codex@latest');
+    expect(content).toContain('codex-npm-latest.stamp');
+  });
+
+  test('codex skill pins the default model to gpt-5.5', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'codex', 'SKILL.md'), 'utf-8');
+    expect(content).toContain('gpt-5.5');
+    expect(content).toContain("-c 'model=\"gpt-5.5\"'");
+    expect(content).toContain('codex exec -m gpt-5.5');
+  });
+
   test('review.ts CODEX_BOUNDARY constant is interpolated into resolver output', () => {
     // The adversarial step resolver should include boundary text in codex exec prompts
     const reviewContent = fs.readFileSync(path.join(ROOT, 'review', 'SKILL.md'), 'utf-8');

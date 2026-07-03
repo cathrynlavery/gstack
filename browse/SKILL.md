@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: browse
 preamble-tier: 1
 version: 1.1.0

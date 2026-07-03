@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: gstack
 preamble-tier: 1
 version: 1.2.0
