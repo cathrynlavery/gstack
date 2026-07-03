@@ -625,6 +625,12 @@ describe('description quality evals', () => {
     expect(desc).toContain('--errors');
   });
 
+  test('codex description routes natural diff second-opinion requests', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'codex', 'SKILL.md'), 'utf-8');
+    const frontmatter = content.slice(0, content.indexOf('\n---', 4));
+    expect(frontmatter).toContain('get a second opinion on this diff');
+  });
+
   // Regression: snapshot -i lost "@e refs" context
   test('snapshot -i mentions @e refs', () => {
     const flag = SNAPSHOT_FLAGS.find(f => f.short === '-i')!;

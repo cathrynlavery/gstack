@@ -2,10 +2,11 @@
 name: codex
 preamble-tier: 3
 version: 1.0.0
-description: "OpenAI Codex CLI wrapper — three modes. Use when: codex review; second opinion; outside voice challenge. (gstack)"
+description: "OpenAI Codex CLI wrapper — three modes. Use when: codex review; second opinion; get a second opinion on this diff; outside voice challenge. (gstack)"
 triggers:
   - codex review
   - second opinion
+  - get a second opinion on this diff
   - outside voice challenge
 allowed-tools:
   - Bash
