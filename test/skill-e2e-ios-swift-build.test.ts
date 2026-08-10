@@ -19,13 +19,17 @@
 
 import { describe, test, expect } from 'bun:test';
 import { spawnSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const ROOT = join(import.meta.dir, '..');
 const FIXTURE_PATH = join(ROOT, 'test/fixtures/ios-qa/FixtureApp');
 const TEMPLATES_PATH = join(ROOT, 'ios-qa/templates');
 const GEN_ACCESSORS_PACKAGE = join(ROOT, 'ios-qa/scripts/gen-accessors-tool/Package.swift');
+const GEN_ACCESSORS_TESTS = join(
+  ROOT,
+  'ios-qa/scripts/gen-accessors-tool/Tests/GenAccessorsTests',
+);
 
 const COPIED_BRIDGE_TEMPLATES = [
   ['StateServer.swift.template', 'Sources/DebugBridgeCore/StateServer.swift'],
@@ -116,7 +120,8 @@ describe('template ↔ fixture parity', () => {
     const genAccessorsPackage = readFileSync(GEN_ACCESSORS_PACKAGE, 'utf-8');
     const debugBridgePackage = readFileSync(join(TEMPLATES_PATH, 'Package.swift.template'), 'utf-8');
 
-    expect(genAccessorsPackage).not.toContain('Tests/GenAccessorsTests');
+    expect(genAccessorsPackage).toContain('Tests/GenAccessorsTests');
+    expect(existsSync(GEN_ACCESSORS_TESTS)).toBe(true);
     expect(debugBridgePackage).not.toContain('Tests/DebugBridgeCoreTests');
   });
 

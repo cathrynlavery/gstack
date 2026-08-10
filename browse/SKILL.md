@@ -1,8 +1,9 @@
 ---
+disable-model-invocation: true
 name: browse
 preamble-tier: 1
 version: 1.1.0
-description: Fast headless browser for QA testing and site dogfooding. (gstack)
+description: "Fast headless browser for QA testing and site dogfooding. Use when: browse a page; headless browser; take page screenshot. (gstack)"
 triggers:
   - browse a page
   - headless browser

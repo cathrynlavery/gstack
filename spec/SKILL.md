@@ -1,7 +1,7 @@
 ---
 name: spec
 version: 0.1.0
-description: Turn vague intent into a precise, executable spec in five phases. (gstack)
+description: "Turn vague intent into a precise, executable spec in five phases. Use when: spec this out; file an issue; write up a ticket; turn this into an issue; make this a github issue; turn this into a backlog item. (gstack)"
 allowed-tools:
   - Bash
   - Read

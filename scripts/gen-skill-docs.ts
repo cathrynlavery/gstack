@@ -240,24 +240,32 @@ function extractNameAndDescription(content: string): { name: string; description
  * Extract voice-triggers YAML list from frontmatter.
  * Returns an array of trigger strings, or [] if no voice-triggers field.
  */
-function extractVoiceTriggers(content: string): string[] {
+function extractYamlStringListField(content: string, field: string): string[] {
   const fmStart = content.indexOf('---\n');
   if (fmStart !== 0) return [];
   const fmEnd = content.indexOf('\n---', fmStart + 4);
   if (fmEnd === -1) return [];
   const frontmatter = content.slice(fmStart + 4, fmEnd);
 
-  const triggers: string[] = [];
-  let inVoice = false;
+  const values: string[] = [];
+  let inField = false;
   for (const line of frontmatter.split('\n')) {
-    if (/^voice-triggers:/.test(line)) { inVoice = true; continue; }
-    if (inVoice) {
-      const m = line.match(/^\s+-\s+"(.+)"$/);
-      if (m) triggers.push(m[1]);
+    if (new RegExp(`^${field}:`).test(line)) { inField = true; continue; }
+    if (inField) {
+      const m = line.match(/^\s+-\s+(?:"([^"]+)"|'([^']+)'|(.+?))\s*$/);
+      if (m) values.push((m[1] || m[2] || m[3] || '').trim());
       else if (!/^\s/.test(line)) break;
     }
   }
-  return triggers;
+  return [...new Set(values.filter(Boolean))];
+}
+
+function extractVoiceTriggers(content: string): string[] {
+  return extractYamlStringListField(content, 'voice-triggers');
+}
+
+function extractRoutingTriggers(content: string): string[] {
+  return extractYamlStringListField(content, 'triggers');
 }
 
 /**
@@ -312,6 +320,7 @@ export interface CatalogParts {
   routingProse: string;    // "Use when asked to...", "Proactively..." paragraphs
   voiceLine: string | null; // "Voice triggers (speech-to-text aliases): ..." line if present
   hasGstackTag: boolean;
+  triggers?: string[];     // Frontmatter triggers folded into the always-visible catalog line
 }
 
 export function splitCatalogDescription(description: string): CatalogParts {
@@ -379,8 +388,10 @@ export function splitCatalogDescription(description: string): CatalogParts {
 /** Build the catalog-trimmed `description:` block. */
 export function buildTrimmedDescription(parts: CatalogParts): string {
   const lead = parts.lead.trim();
+  const triggers = [...new Set((parts.triggers || []).map(t => t.trim()).filter(Boolean))];
+  const triggerLine = triggers.length > 0 ? ` Use when: ${triggers.join('; ')}.` : '';
   const suffix = parts.hasGstackTag ? ' (gstack)' : '';
-  return `${lead}${suffix}`;
+  return `${lead}${triggerLine}${suffix}`;
 }
 
 /** Build the body section that holds the routing/voice prose. */
@@ -441,22 +452,27 @@ export function applyCatalogTrim(content: string, skillName: string): { content:
                     || frontmatter.match(/^description:\s+(.+)$/m);
   if (!descMatch) return null;
 
-  // Extract full description text
+  // Extract full description text and the machine-readable trigger list. Claude
+  // Code ignores `triggers:` at routing time, so catalog trim folds a compact
+  // trigger phrase into the frontmatter `description:` while preserving the
+  // YAML field for gstack/GBrain tooling.
   let descText: string;
   if (descMatch[0].startsWith('description: |') || /^description:\s*\|/.test(descMatch[0])) {
     descText = descMatch[1].split('\n').map(l => l.replace(/^\s{2}/, '')).join('\n').trim();
   } else {
     descText = descMatch[1].trim();
   }
+  const triggers = extractRoutingTriggers(content);
 
   // Skip skills with very short descriptions (already trimmed or no routing prose).
   // Below ~120 chars, splitting adds no value.
-  if (descText.length < 120) return null;
+  if (descText.length < 120 && triggers.length === 0) return null;
 
   const parts = splitCatalogDescription(descText);
+  parts.triggers = triggers;
   // If lead + (gstack) is already most of the text, no trim needed.
   const trimmedLen = buildTrimmedDescription(parts).length;
-  if (trimmedLen >= descText.length - 20) return null;
+  if (trimmedLen >= descText.length - 20 && triggers.length === 0) return null;
 
   // Replace description in frontmatter — keep trailing newline so the next
   // YAML field doesn't collide on the same line as the description value.

@@ -9,14 +9,17 @@
  */
 
 import { validateSkill } from '../test/helpers/skill-parser';
-import { ALL_HOST_CONFIGS, claude, getExternalHosts } from '../hosts/index';
 import { discoverTemplates, discoverSkillFiles } from './discover-skills';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { ALL_HOST_CONFIGS, getExternalHosts } from '../hosts/index';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const ROOT_REALPATH = fs.realpathSync(ROOT);
+const CLAUDE_SKIP_SKILLS = new Set(
+  ALL_HOST_CONFIGS.find(c => c.name === 'claude')?.generation.skipSkills ?? [],
+);
 
 function isRepoRootSymlink(candidateDir: string): boolean {
   try {
@@ -65,14 +68,14 @@ for (const file of SKILL_FILES) {
 
 console.log('\n  Templates:');
 const TEMPLATES = discoverTemplates(ROOT);
-const CLAUDE_SKIPS = new Set(claude.generation.skipSkills || []);
 
 for (const { tmpl, output } of TEMPLATES) {
-  const skillDir = path.dirname(tmpl);
-  if (skillDir !== '.' && CLAUDE_SKIPS.has(skillDir)) {
-    console.log(`  -  ${tmpl.padEnd(30)} — skipped for ${claude.displayName}`);
+  const skillName = path.dirname(tmpl) === '.' ? path.basename(ROOT) : tmpl.split('/')[0];
+  if (CLAUDE_SKIP_SKILLS.has(skillName)) {
+    console.log(`  -  ${tmpl.padEnd(30)} — skipped by Claude host config`);
     continue;
   }
+
   const tmplPath = path.join(ROOT, tmpl);
   const outPath = path.join(ROOT, output);
   if (!fs.existsSync(tmplPath)) {

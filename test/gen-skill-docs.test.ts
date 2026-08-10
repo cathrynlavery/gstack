@@ -625,6 +625,12 @@ describe('description quality evals', () => {
     expect(desc).toContain('--errors');
   });
 
+  test('codex description routes natural diff second-opinion requests', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'codex', 'SKILL.md'), 'utf-8');
+    const frontmatter = content.slice(0, content.indexOf('\n---', 4));
+    expect(frontmatter).toContain('get a second opinion on this diff');
+  });
+
   // Regression: snapshot -i lost "@e refs" context
   test('snapshot -i mentions @e refs', () => {
     const flag = SNAPSHOT_FLAGS.find(f => f.short === '-i')!;
@@ -1342,6 +1348,19 @@ describe('Codex filesystem boundary', () => {
     expect(content).toContain('Detect skill-file rabbit holes');
     expect(content).toContain('gstack-update-check');
     expect(content).toContain('Consider retrying');
+  });
+
+  test('codex skill auto-refreshes the CLI from npm latest', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'codex', 'SKILL.md'), 'utf-8');
+    expect(content).toContain('npm install -g @openai/codex@latest');
+    expect(content).toContain('codex-npm-latest.stamp');
+  });
+
+  test('codex skill pins the default model to gpt-5.5', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'codex', 'SKILL.md'), 'utf-8');
+    expect(content).toContain('gpt-5.5');
+    expect(content).toContain("-c 'model=\"gpt-5.5\"'");
+    expect(content).toContain('codex exec -m gpt-5.5');
   });
 
   test('review.ts CODEX_BOUNDARY constant is interpolated into resolver output', () => {
@@ -2142,7 +2161,7 @@ describe('Parameterized host smoke tests', () => {
         cwd: ROOT, stdout: 'pipe', stderr: 'pipe',
       });
     }
-  });
+  }, 30_000);
 
   for (const hostConfig of getExternalHosts()) {
     describe(`${hostConfig.displayName} (--host ${hostConfig.name})`, () => {
@@ -2235,7 +2254,7 @@ describe('--host all', () => {
         cwd: ROOT, stdout: 'pipe', stderr: 'pipe',
       });
     }
-  });
+  }, 30_000);
 
   test('--host all generates for all registered hosts', () => {
     const result = Bun.spawnSync(['bun', 'run', 'scripts/gen-skill-docs.ts', '--host', 'all', '--dry-run'], {

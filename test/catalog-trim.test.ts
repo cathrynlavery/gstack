@@ -151,6 +151,17 @@ describe('buildTrimmedDescription', () => {
     expect(out).toBe('Some lead. (gstack)');
   });
 
+  test('folds frontmatter triggers into the catalog description', () => {
+    const out = buildTrimmedDescription({
+      lead: 'Some lead.',
+      routingProse: 'routing',
+      voiceLine: null,
+      hasGstackTag: true,
+      triggers: ['second opinion', 'ask codex'],
+    });
+    expect(out).toBe('Some lead. Use when: second opinion; ask codex. (gstack)');
+  });
+
   test('omits (gstack) when hasGstackTag is false', () => {
     const out = buildTrimmedDescription({
       lead: 'No tag.',
@@ -250,6 +261,29 @@ Original body content here.
     );
     const result = applyCatalogTrim(shortSkill, 'example');
     expect(result).toBeNull();
+  });
+
+  test('rewrites short descriptions when triggers would otherwise be invisible', () => {
+    const shortWithTriggers = `---
+name: codex
+description: Already short. (gstack)
+triggers:
+  - second opinion
+  - ask codex
+preamble-tier: 2
+---
+<!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
+<!-- Regenerate: bun run gen:skill-docs -->
+
+# Body
+`;
+
+    const result = applyCatalogTrim(shortWithTriggers, 'codex');
+    expect(result).not.toBeNull();
+    expect(result!.content).toMatch(
+      /^description: "?Already short\. Use when: second opinion; ask codex\. \(gstack\)"?$/m,
+    );
+    expect(result!.content).toContain('triggers:\n  - second opinion\n  - ask codex');
   });
 
   test('keeps the newline between description and next YAML field (no field collision)', () => {

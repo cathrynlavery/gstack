@@ -2,7 +2,7 @@
 name: health
 preamble-tier: 2
 version: 1.0.0
-description: Code quality dashboard. (gstack)
+description: "Code quality dashboard. Use when: code health check; quality dashboard; how healthy is codebase. (gstack)"
 triggers:
   - code health check
   - quality dashboard

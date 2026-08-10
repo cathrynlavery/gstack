@@ -2,7 +2,7 @@
 name: make-pdf
 preamble-tier: 1
 version: 1.0.0
-description: Turn any markdown file into a publication-quality PDF. (gstack)
+description: "Turn any markdown file into a publication-quality PDF. Use when: markdown to pdf; generate pdf; make pdf; export pdf. (gstack)"
 triggers:
   - markdown to pdf
   - generate pdf
@@ -599,6 +599,10 @@ One command, no flags. Gets a clean PDF with running header + page numbers
 $P generate letter.md                 # writes /tmp/letter.pdf
 $P generate letter.md letter.pdf      # explicit output path
 ```
+
+In sandboxed agent sessions, generate the PDF into `/tmp` or the current project
+first. If the final destination is Dropbox, Desktop, or another user folder,
+copy or move the finished PDF there as a separate shell step after generation.
 
 ### Publication mode — cover + TOC + chapter breaks
 

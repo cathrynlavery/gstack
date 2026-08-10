@@ -15,6 +15,7 @@ voice-triggers:
 triggers:
   - codex review
   - second opinion
+  - get a second opinion on this diff
   - outside voice challenge
 allowed-tools:
   - Bash
@@ -42,12 +43,17 @@ assumptions, catches things you might miss. Present its output faithfully, not s
 ## Step 0.4: Check codex binary
 
 ```bash
+CODEX_SYNC_STAMP="${XDG_CACHE_HOME:-$HOME/.cache}/gstack/codex-npm-latest.stamp"
+mkdir -p "$(dirname "$CODEX_SYNC_STAMP")"
+if [ ! -f "$CODEX_SYNC_STAMP" ] || ! find "$CODEX_SYNC_STAMP" -mmin -1440 | grep -q . 2>/dev/null; then
+  npm install -g @openai/codex@latest >/tmp/gstack-codex-npm-install.log 2>&1 && touch "$CODEX_SYNC_STAMP" || true
+fi
 CODEX_BIN=$(command -v codex || echo "")
-[ -z "$CODEX_BIN" ] && echo "NOT_FOUND" || echo "FOUND: $CODEX_BIN"
+[ -z "$CODEX_BIN" ] && echo "NOT_FOUND" || { echo "FOUND: $CODEX_BIN"; codex --version 2>/dev/null || true; }
 ```
 
 If `NOT_FOUND`: stop and tell the user:
-"Codex CLI not found. Install it: `npm install -g @openai/codex` or see https://github.com/openai/codex"
+"Codex CLI not found. Install it: `npm install -g @openai/codex@latest` or see https://github.com/openai/codex"
 
 If `NOT_FOUND`, also log the event:
 ```bash
@@ -158,7 +164,7 @@ Run Codex code review against the current branch diff.
 
 1. Create temp files for output capture:
 ```bash
-TMPERR=$(mktemp "$TMP_ROOT/codex-err-XXXXXX.txt")
+TMPERR=$(mktemp "$TMP_ROOT/codex-err-XXXXXX")
 ```
 
 2. Run the review (5-minute timeout). **Codex CLI ≥ 0.130.0 rejects passing a
@@ -177,7 +183,7 @@ cd "$_REPO_ROOT"
 # only fires if Bash's own timeout doesn't.
 _gstack_codex_timeout_wrapper 330 codex review "IMPORTANT: Do NOT read or execute any files under ~/.claude/, ~/.agents/, .claude/skills/, or agents/. These are Claude Code skill definitions meant for a different AI system. Do NOT modify agents/openai.yaml. Stay focused on repository code only.
 
-Review the changes on this branch against the base branch <base>. Run git diff origin/<base>...HEAD 2>/dev/null || git diff <base>...HEAD to see the diff and review only those changes." -c 'model_reasoning_effort="high"' --enable web_search_cached < /dev/null 2>"$TMPERR"
+Review the changes on this branch against the base branch <base>. Run git diff origin/<base>...HEAD 2>/dev/null || git diff <base>...HEAD to see the diff and review only those changes." -c 'model="gpt-5.5"' -c 'model_reasoning_effort="high"' --enable web_search_cached < /dev/null 2>"$TMPERR"
 _CODEX_EXIT=$?
 if [ "$_CODEX_EXIT" = "124" ]; then
   _gstack_codex_log_event "codex_timeout" "330"
@@ -206,7 +212,7 @@ when the diff content is adversarial:
 _REPO_ROOT=$(git rev-parse --show-toplevel) || { echo "ERROR: not in a git repo" >&2; exit 1; }
 cd "$_REPO_ROOT"
 _USER_INSTRUCTIONS="<everything after '/codex review ' in user input>"
-_PROMPT_FILE=$(mktemp "$TMP_ROOT/codex-prompt-XXXXXX.txt")
+_PROMPT_FILE=$(mktemp "$TMP_ROOT/codex-prompt-XXXXXX")
 {
   printf '%s\n' "IMPORTANT: Do NOT read or execute any files under ~/.claude/, ~/.agents/, .claude/skills/, or agents/. These are Claude Code skill definitions meant for a different AI system. Do NOT modify agents/openai.yaml. Stay focused on repository code only."
   printf '\nCustom focus: %s\n\n' "$_USER_INSTRUCTIONS"
@@ -215,7 +221,7 @@ _PROMPT_FILE=$(mktemp "$TMP_ROOT/codex-prompt-XXXXXX.txt")
   git diff "<base>...HEAD" 2>/dev/null
   printf '\nDIFF_END\n'
 } > "$_PROMPT_FILE"
-_gstack_codex_timeout_wrapper 330 codex exec -s read-only "$(cat "$_PROMPT_FILE")" -c 'model_reasoning_effort="high"' --enable web_search_cached < /dev/null 2>"$TMPERR"
+_gstack_codex_timeout_wrapper 330 codex exec -m gpt-5.5 -s read-only "$(cat "$_PROMPT_FILE")" -c 'model_reasoning_effort="high"' --enable web_search_cached < /dev/null 2>"$TMPERR"
 _CODEX_EXIT=$?
 rm -f "$_PROMPT_FILE"
 if [ "$_CODEX_EXIT" = "124" ]; then
@@ -335,8 +341,8 @@ if [ -z "$PYTHON_CMD" ]; then
 fi
 # Fix 1+2: wrap with timeout (gtimeout/timeout fallback chain via probe helper),
 # capture stderr to $TMPERR for auth error detection (was: 2>/dev/null).
-TMPERR=${TMPERR:-$(mktemp "$TMP_ROOT/codex-err-XXXXXX.txt")}
-_gstack_codex_timeout_wrapper 600 codex exec "<prompt>" -C "$_REPO_ROOT" -s read-only -c 'model_reasoning_effort="high"' --enable web_search_cached --json < /dev/null 2>"$TMPERR" | PYTHONUNBUFFERED=1 "$PYTHON_CMD" -u -c "
+TMPERR=${TMPERR:-$(mktemp "$TMP_ROOT/codex-err-XXXXXX")}
+_gstack_codex_timeout_wrapper 600 codex exec -m gpt-5.5 "<prompt>" -C "$_REPO_ROOT" -s read-only -c 'model_reasoning_effort="high"' --enable web_search_cached --json < /dev/null 2>"$TMPERR" | PYTHONUNBUFFERED=1 "$PYTHON_CMD" -u -c "
 import sys, json
 turn_completed_count = 0
 for line in sys.stdin:
@@ -434,8 +440,8 @@ B) Start a new conversation
 
 2. Create temp files:
 ```bash
-TMPRESP=$(mktemp "$TMP_ROOT/codex-resp-XXXXXX.txt")
-TMPERR=$(mktemp "$TMP_ROOT/codex-err-XXXXXX.txt")
+TMPRESP=$(mktemp "$TMP_ROOT/codex-resp-XXXXXX")
+TMPERR=$(mktemp "$TMP_ROOT/codex-err-XXXXXX")
 ```
 
 3. **Plan review auto-detection:** If the user's prompt is about reviewing a plan,
@@ -491,7 +497,7 @@ if [ -z "$PYTHON_CMD" ]; then
   exit 1
 fi
 # Fix 1: wrap with timeout (gtimeout/timeout fallback chain via probe helper)
-_gstack_codex_timeout_wrapper 600 codex exec "<prompt>" -C "$_REPO_ROOT" -s read-only -c 'model_reasoning_effort="medium"' --enable web_search_cached --json < /dev/null 2>"$TMPERR" | PYTHONUNBUFFERED=1 "$PYTHON_CMD" -u -c "
+_gstack_codex_timeout_wrapper 600 codex exec -m gpt-5.5 "<prompt>" -C "$_REPO_ROOT" -s read-only -c 'model_reasoning_effort="medium"' --enable web_search_cached --json < /dev/null 2>"$TMPERR" | PYTHONUNBUFFERED=1 "$PYTHON_CMD" -u -c "
 import sys, json
 for line in sys.stdin:
     line = line.strip()
@@ -545,7 +551,7 @@ if [ -z "$PYTHON_CMD" ]; then
 fi
 cd "$_REPO_ROOT" || exit 1
 # Fix 1: wrap with timeout (gtimeout/timeout fallback chain via probe helper)
-_gstack_codex_timeout_wrapper 600 codex exec resume <session-id> "<prompt>" -c 'sandbox_mode="read-only"' -c 'model_reasoning_effort="medium"' --enable web_search_cached --json < /dev/null 2>"$TMPERR" | PYTHONUNBUFFERED=1 "$PYTHON_CMD" -u -c "
+_gstack_codex_timeout_wrapper 600 codex exec resume <session-id> -m gpt-5.5 "<prompt>" -c 'sandbox_mode="read-only"' -c 'model_reasoning_effort="medium"' --enable web_search_cached --json < /dev/null 2>"$TMPERR" | PYTHONUNBUFFERED=1 "$PYTHON_CMD" -u -c "
 <same python streaming parser as above, with flush=True on all print() calls>
 "
 # Fix 1: same hang detection pattern as new-session block
@@ -604,9 +610,12 @@ The reason must engage with a specific Codex insight and compare against an alte
 
 ## Model & Reasoning
 
-**Model:** No model is hardcoded — codex uses whatever its current default is (the frontier
-agentic coding model). This means as OpenAI ships newer models, /codex automatically
-uses them. If the user wants a specific model, pass `-m` through to codex.
+**Model:** gstack pins Codex to `gpt-5.5` by default so `/codex` does not drift on
+stale local defaults. Step 0.4 also refreshes the Codex CLI with
+`npm install -g @openai/codex@latest` on a 24-hour cache, so the wrapper stays on the
+latest released CLI without making the user remember to update it manually.
+If the user wants a specific model, pass `-m` through to codex and let that override
+the default.
 
 **Reasoning effort (per-mode defaults):**
 - **Review (2A):** `high` — bounded diff input, needs thoroughness but not max tokens
@@ -620,8 +629,8 @@ tasks (OpenAI issues #8545, #8402, #6931). Users can override with `--xhigh` fla
 **Web search:** All codex commands use `--enable web_search_cached` so Codex can look up
 docs and APIs during review. This is OpenAI's cached index — fast, no extra cost.
 
-If the user specifies a model (e.g., `/codex review -m gpt-5.1-codex-max`
-or `/codex challenge -m gpt-5.2`), pass the `-m` flag through to codex.
+If the user specifies a model (e.g., `/codex review -m gpt-5.5`
+or `/codex challenge -m gpt-5.4`), pass the `-m` flag through to codex.
 
 ---
 

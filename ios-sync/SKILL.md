@@ -2,7 +2,7 @@
 name: ios-sync
 preamble-tier: 3
 version: 1.0.0
-description: Regenerate the iOS debug bridge against the latest upstream gstack templates. (gstack)
+description: "Regenerate the iOS debug bridge against the latest upstream gstack templates. Use when: resync the ios debug bridge; regenerate ios accessors; update the gstack ios instrumentation. (gstack)"
 allowed-tools:
   - Bash
   - Read

@@ -2,7 +2,7 @@
 name: investigate
 preamble-tier: 2
 version: 1.0.0
-description: Systematic debugging with root cause investigation. (gstack)
+description: "Systematic debugging with root cause investigation. Use when: debug this; fix this bug; why is this broken; root cause analysis; investigate this error. (gstack)"
 allowed-tools:
   - Bash
   - Read
