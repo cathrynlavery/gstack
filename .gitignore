@@ -1,5 +1,6 @@
 .env
 node_modules/
+.build/
 dist/
 browse/dist/
 design/dist/
